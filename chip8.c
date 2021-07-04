@@ -47,6 +47,12 @@ static uint8_t chip8_fontset[80] = {
   0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
+// 1byte delay timer
+static uint8_t delayTimer;
+
+// 1 byte sound timer
+static uint8_t soundTimer;
+
 void initialize();
 void emulateCycle();
 
@@ -192,8 +198,75 @@ void emulateCycle(){
                 V[(opcodes & 0x0F00)>>8] <<= 1;
                 break;
         }
-        case 0x9000:
+    case 0x9000:
+        if(V[(opcodes & 0x0F00)>>8] != V[(opcodes & 0x00F0)>>4])
+            pc += 2;
+            break;
+    case 0xA000:
+        I = (opcodes & 0x0FFF);
+        break;
+    case 0xB000:
+        pc = (opcodes & 0x0FFF) + V[0x0];
+        break;
+    case 0xC000:
+        V[(opcodes & 0x0F00)>>8] = (rand()%256) & (opcodes & 0x00FF);
+        break;
+    case 0xD000:
+        // To be Implemented
+        break;    
+    case 0xE000:
+        if((opcodes & 0x00FF) == 0x9E){
+            if(keypad[V[(opcodes & 0x0F00)>>8]] == 0xFF)
+                pc += 2;
+        }
+        else{
+            if(keypad[V[(opcodes & 0x0F00)>>8]] == 0x00)
+                pc += 2;
+            }
+        break;
+    case 0xF000:
+        switch (opcodes & 0x00FF){
+        case 0x07:
+            V[(opcodes & 0x0F00)>>8] = delayTimer;
+            break;
+        case 0x0A:
+            uint8_t temp = (opcodes & 0x0F00) >> 8;
+            if(keypad[0]) V[temp] = 0;
+            else if(keypad[1]) V[temp] = 1;
+            else if(keypad[2]) V[temp] = 2;
+            else if(keypad[3]) V[temp] = 3;
+            else if(keypad[4]) V[temp] = 4;
+            else if(keypad[5]) V[temp] = 5;
+            else if(keypad[6]) V[temp] = 6;
+            else if(keypad[7]) V[temp] = 7;
+            else if(keypad[8]) V[temp] = 8;
+            else if(keypad[9]) V[temp] = 9;
+            else if(keypad[10]) V[temp] = 10;
+            else if(keypad[11]) V[temp] = 11;
+            else if(keypad[12]) V[temp] = 12;
+            else if(keypad[13]) V[temp] = 13;
+            else if(keypad[14]) V[temp] = 14;
+            else if(keypad[15]) V[temp] = 15;
+            else pc -= 2;
+            break;
+        
+        case 0x15:
+            delayTimer = V[(opcodes & 0x0F00) >> 8];
+            break;
+        
+        case 0x18:
+            soundTimer = V[(opcodes & 0x0F00) >> 8];
+            break;
+        
+        case 0x1E:
+            I += V[(opcodes & 0x0F00) >> 8];
+            break;
+        
+        case 0x29:
 
+        default:
+            break;
+        }
     default:
         break;
     }
