@@ -61,15 +61,89 @@ public:
     uint8_t delayTimer;
     uint8_t soundTimer;
 
-    // Class Defined Outside
+    // Function Pointer setup (Not part of chip)
+    //int table[16],table8[9],table0[2],tableE[2],tableF[9];
+	typedef void (chip8::*Chip8Func)();
+	Chip8Func table[0xF + 1]{&chip8::op_NULL};
+	Chip8Func table0[0xE + 1]{&chip8::op_NULL};
+	Chip8Func table8[0xE + 1]{&chip8::op_NULL};
+	Chip8Func tableE[0xE + 1]{&chip8::op_NULL};
+	Chip8Func tableF[0x65 + 1]{&chip8::op_NULL};
+
+    // Member Functions Defined Outside
     void loadProgram(); // Loads File into Memory
-    
+    void emulateCycle(); // Emulates one cycle
+    void printScreen();
+
     chip8(){
         pc = startLocation;
 
         for(int i=0;i<80;i++)
-            memory[i + fontSetStart] = chip8_fontset[i]; 
+            memory[i + fontSetStart] = chip8_fontset[i];
+        
+        memset(gfx,0,sizeof(gfx));
+
+        table[0x0] = &chip8::Table0;
+		table[0x1] = &chip8::op_1;
+		table[0x2] = &chip8::op_2;
+		table[0x3] = &chip8::op_3;
+		table[0x4] = &chip8::op_4;
+		table[0x5] = &chip8::op_5;
+		table[0x6] = &chip8::op_6;
+		table[0x7] = &chip8::op_7;
+		table[0x8] = &chip8::Table8;
+		table[0x9] = &chip8::op_9;
+		table[0xA] = &chip8::op_A;
+		table[0xB] = &chip8::op_B;
+		table[0xC] = &chip8::op_C;
+		table[0xD] = &chip8::op_D;
+		table[0xE] = &chip8::TableE;
+		table[0xF] = &chip8::TableF;
+
+        table0[0x0] = &chip8::op_00E0;
+		table0[0xE] = &chip8::op_00EE;
+
+		table8[0x0] = &chip8::op_8xy0;
+		table8[0x1] = &chip8::op_8xy1;
+		table8[0x2] = &chip8::op_8xy2;
+		table8[0x3] = &chip8::op_8xy3;
+		table8[0x4] = &chip8::op_8xy4;
+		table8[0x5] = &chip8::op_8xy5;
+		table8[0x6] = &chip8::op_8xy6;
+		table8[0x7] = &chip8::op_8xy7;
+		table8[0xE] = &chip8::op_8xyE;
+
+		tableE[0x1] = &chip8::op_ExA1;
+		tableE[0xE] = &chip8::op_Ex9E;
+
+		tableF[0x07] = &chip8::op_Fx07;
+		tableF[0x0A] = &chip8::op_Fx0A;
+		tableF[0x15] = &chip8::op_Fx15;
+		tableF[0x18] = &chip8::op_Fx18;
+		tableF[0x1E] = &chip8::op_Fx1E;
+		tableF[0x29] = &chip8::op_Fx29;
+		tableF[0x33] = &chip8::op_Fx33;
+		tableF[0x55] = &chip8::op_Fx55;
+		tableF[0x65] = &chip8::op_Fx65;
     }
+
+    void Table0(){
+        ((*this).*(table0[opcode & 0x000F]))();
+    }
+
+    void Table8(){
+        ((*this).*(table8[opcode & 0x000F]))();
+    }
+
+    void TableE(){
+        ((*this).*(tableE[opcode & 0x000F]))();
+    }
+
+    void TableF(){
+        ((*this).*(tableF[opcode & 0x00FF]))();
+    }
+
+    void op_NULL(){}
 
     void op_00E0(){
         memset(gfx,0,sizeof(gfx));
@@ -273,14 +347,15 @@ public:
     }
 
     void op_Fx55(){
-        for(uint8_t i=0;i<=V[(opcode & 0x0F00) >> 8];++i)
+        for(uint8_t i=0;i<=((opcode & 0x0F00) >> 8);i++)
             memory[I + i] = V[i];
     }
 
     void op_Fx65(){
-        for(uint8_t i=0;i <= V[(opcode & 0x0F00) >> 8];++i)
+        for(uint8_t i=0;i <= ((opcode & 0x0F00) >> 8);i++)
             V[i] = memory[I + i];
     }
+
 };
 
 void chip8::loadProgram(){
@@ -290,7 +365,7 @@ void chip8::loadProgram(){
     //opens the file for reading
     ptr = fopen(fileName,"rb");
 
-    //takes the pointer to then end
+    //takes the pointer to the end
     fseek(ptr,0,SEEK_END);
     // gets the total space required in bytes
     int n = ftell(ptr);
@@ -312,11 +387,43 @@ void chip8::loadProgram(){
     buf = NULL;
 }
 
+void chip8::emulateCycle(){
+    opcode = (memory[pc] << 8u) | memory[pc + 1];
+	pc += 2;
 
+	((*this).*(table[(opcode & 0xF000u) >> 12u]))();
+
+	if (delayTimer > 0)
+		--delayTimer;
+
+	// Decrement the sound timer if it's been set
+	if (soundTimer > 0)
+		--soundTimer;
+}
+
+void chip8::printScreen(){
+    for(int j=0;j<32;j++){
+        for(int i=0;i<64;i++){
+            if(gfx[(screen_width*j)+i])
+               printf("█");
+            else
+                printf(" ");
+            //printf("%d",gfx[(64*j)+i]);
+        }
+        printf("\n");
+    }
+}
 
 int main(){
     int n;
     chip8 c;
     c.loadProgram();
+    uint16_t i=0;
+    for(;;){
+        c.emulateCycle();
+        if(i==0)
+            c.printScreen();
+        i++;
+    }
     return 0;
 }
