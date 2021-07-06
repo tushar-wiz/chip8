@@ -82,51 +82,51 @@ public:
         
         // MSB of the instruction 
         table[0x0] = &chip8::Table0; // Address of the Table0 function which then points to table0[]
-		table[0x1] = &chip8::op_1;
-		table[0x2] = &chip8::op_2;
-		table[0x3] = &chip8::op_3;
-		table[0x4] = &chip8::op_4;
-		table[0x5] = &chip8::op_5;
-		table[0x6] = &chip8::op_6;
-		table[0x7] = &chip8::op_7;
-		table[0x8] = &chip8::Table8; // Points to the Table8 function which then points to table8[]
-		table[0x9] = &chip8::op_9;
-		table[0xA] = &chip8::op_A;
-		table[0xB] = &chip8::op_B;
-		table[0xC] = &chip8::op_C;
-		table[0xD] = &chip8::op_D;
-		table[0xE] = &chip8::TableE; // Points to the TableE function which then points to tableE[]
-		table[0xF] = &chip8::TableF; // Points to the TableF function which then points to tableF[]
+	    table[0x1] = &chip8::op_1;
+	    table[0x2] = &chip8::op_2;
+	    table[0x3] = &chip8::op_3;
+	    table[0x4] = &chip8::op_4;
+	    table[0x5] = &chip8::op_5;
+	    table[0x6] = &chip8::op_6;
+	    table[0x7] = &chip8::op_7;
+	    table[0x8] = &chip8::Table8; // Points to the Table8 function which then points to table8[]
+	    table[0x9] = &chip8::op_9;
+	    table[0xA] = &chip8::op_A;
+	    table[0xB] = &chip8::op_B;
+	    table[0xC] = &chip8::op_C;
+	    table[0xD] = &chip8::op_D;
+	    table[0xE] = &chip8::TableE; // Points to the TableE function which then points to tableE[]
+	    table[0xF] = &chip8::TableF; // Points to the TableF function which then points to tableF[]
 
         // these Instructions are returned by the Table0() func
         table0[0x0] = &chip8::op_00E0;
-		table0[0xE] = &chip8::op_00EE;
+	    table0[0xE] = &chip8::op_00EE;
 
         // these Instructions are returned by the Table8() func
-		table8[0x0] = &chip8::op_8xy0;
-		table8[0x1] = &chip8::op_8xy1;
-		table8[0x2] = &chip8::op_8xy2;
-		table8[0x3] = &chip8::op_8xy3;
-		table8[0x4] = &chip8::op_8xy4;
-		table8[0x5] = &chip8::op_8xy5;
-		table8[0x6] = &chip8::op_8xy6;
-		table8[0x7] = &chip8::op_8xy7;
-		table8[0xE] = &chip8::op_8xyE;
+	    table8[0x0] = &chip8::op_8xy0;
+	    table8[0x1] = &chip8::op_8xy1;
+	    table8[0x2] = &chip8::op_8xy2;
+	    table8[0x3] = &chip8::op_8xy3;
+	    table8[0x4] = &chip8::op_8xy4;
+	    table8[0x5] = &chip8::op_8xy5;
+	    table8[0x6] = &chip8::op_8xy6;
+	    table8[0x7] = &chip8::op_8xy7;
+	    table8[0xE] = &chip8::op_8xyE;
 
         // these Instructions are returned by the TableE() func
-		tableE[0x1] = &chip8::op_ExA1;
-		tableE[0xE] = &chip8::op_Ex9E;
+	    tableE[0x1] = &chip8::op_ExA1;
+	    tableE[0xE] = &chip8::op_Ex9E;
 
         // these Instructions are returned by the TableF() func
-		tableF[0x07] = &chip8::op_Fx07;
-		tableF[0x0A] = &chip8::op_Fx0A;
-		tableF[0x15] = &chip8::op_Fx15;
-		tableF[0x18] = &chip8::op_Fx18;
-		tableF[0x1E] = &chip8::op_Fx1E;
-		tableF[0x29] = &chip8::op_Fx29;
-		tableF[0x33] = &chip8::op_Fx33;
-		tableF[0x55] = &chip8::op_Fx55;
-		tableF[0x65] = &chip8::op_Fx65;
+	    tableF[0x07] = &chip8::op_Fx07;
+	    tableF[0x0A] = &chip8::op_Fx0A;
+	    tableF[0x15] = &chip8::op_Fx15;
+	    tableF[0x18] = &chip8::op_Fx18;
+	    tableF[0x1E] = &chip8::op_Fx1E;
+	    tableF[0x29] = &chip8::op_Fx29;
+	    tableF[0x33] = &chip8::op_Fx33;
+	    tableF[0x55] = &chip8::op_Fx55;
+	    tableF[0x65] = &chip8::op_Fx65;
     }
 
     void Table0(){
