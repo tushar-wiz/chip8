@@ -61,19 +61,16 @@ public:
     uint8_t delayTimer;
     uint8_t soundTimer;
 
-    // Function Pointer setup (Not part of chip)
-    //int table[16],table8[9],table0[2],tableE[2],tableF[9];
+    // Function Pointer setup
 	typedef void (chip8::*Chip8Func)();
+    // if typedef is not used the syntax would be void (chip8::*table[0xE + 1])();
+    // We Declare an array "table" which has elements made up of member class addresses that return void
+    // array is initialized with op_NULL function address
 	Chip8Func table[0xF + 1]{&chip8::op_NULL};
 	Chip8Func table0[0xE + 1]{&chip8::op_NULL};
 	Chip8Func table8[0xE + 1]{&chip8::op_NULL};
 	Chip8Func tableE[0xE + 1]{&chip8::op_NULL};
 	Chip8Func tableF[0x65 + 1]{&chip8::op_NULL};
-
-    // Member Functions Defined Outside
-    void loadProgram(); // Loads File into Memory
-    void emulateCycle(); // Emulates one cycle
-    void printScreen();
 
     chip8(){
         pc = startLocation;
@@ -82,8 +79,9 @@ public:
             memory[i + fontSetStart] = chip8_fontset[i];
         
         memset(gfx,0,sizeof(gfx));
-
-        table[0x0] = &chip8::Table0;
+        
+        // MSB of the instruction 
+        table[0x0] = &chip8::Table0; // Address of the Table0 function which then points to table0[]
 		table[0x1] = &chip8::op_1;
 		table[0x2] = &chip8::op_2;
 		table[0x3] = &chip8::op_3;
@@ -91,18 +89,20 @@ public:
 		table[0x5] = &chip8::op_5;
 		table[0x6] = &chip8::op_6;
 		table[0x7] = &chip8::op_7;
-		table[0x8] = &chip8::Table8;
+		table[0x8] = &chip8::Table8; // Points to the Table8 function which then points to table8[]
 		table[0x9] = &chip8::op_9;
 		table[0xA] = &chip8::op_A;
 		table[0xB] = &chip8::op_B;
 		table[0xC] = &chip8::op_C;
 		table[0xD] = &chip8::op_D;
-		table[0xE] = &chip8::TableE;
-		table[0xF] = &chip8::TableF;
+		table[0xE] = &chip8::TableE; // Points to the TableE function which then points to tableE[]
+		table[0xF] = &chip8::TableF; // Points to the TableF function which then points to tableF[]
 
+        // these Instructions are returned by the Table0() func
         table0[0x0] = &chip8::op_00E0;
 		table0[0xE] = &chip8::op_00EE;
 
+        // these Instructions are returned by the Table8() func
 		table8[0x0] = &chip8::op_8xy0;
 		table8[0x1] = &chip8::op_8xy1;
 		table8[0x2] = &chip8::op_8xy2;
@@ -113,9 +113,11 @@ public:
 		table8[0x7] = &chip8::op_8xy7;
 		table8[0xE] = &chip8::op_8xyE;
 
+        // these Instructions are returned by the TableE() func
 		tableE[0x1] = &chip8::op_ExA1;
 		tableE[0xE] = &chip8::op_Ex9E;
 
+        // these Instructions are returned by the TableF() func
 		tableF[0x07] = &chip8::op_Fx07;
 		tableF[0x0A] = &chip8::op_Fx0A;
 		tableF[0x15] = &chip8::op_Fx15;
@@ -145,6 +147,9 @@ public:
 
     void op_NULL(){}
 
+
+    // Instructions Below 
+    // Reference ==> http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
     void op_00E0(){
         memset(gfx,0,sizeof(gfx));
     }
@@ -257,12 +262,13 @@ public:
         V[(opcode & 0x0F00)>>8] = (rand()%256) & (opcode & 0x00FF);
     }
 
+    // Taken this func from online reference
     void op_D(){
         uint8_t height = opcode & 0x000Fu;
 
         // Wrap if going beyond screen boundaries
-        uint8_t xPos = V[(opcode & 0x0F00u) >> 8u] % screen_width;
-        uint8_t yPos = V[(opcode & 0x00F0u) >> 4u] % screen_height;
+        uint8_t xPos = V[(opcode & 0x0F00)>>8] % screen_width;
+        uint8_t yPos = V[(opcode & 0x00F0)>>4] % screen_height;
 
         V[0xF] = 0;
 
@@ -270,7 +276,7 @@ public:
             uint8_t spriteByte = memory[I + row];
 
             for (unsigned int col = 0; col < 8; ++col){
-                uint8_t spritePixel = spriteByte & (0x80u >> col);
+                uint8_t spritePixel = spriteByte & (0x80 >> col);
                 uint32_t* screenPixel = &gfx[(yPos + row) * screen_width + (xPos + col)];
 
                 // Sprite pixel is on
@@ -356,6 +362,10 @@ public:
             V[i] = memory[I + i];
     }
 
+    // Member Functions Defined Outside
+    void loadProgram(); // Loads File into Memory
+    void emulateCycle(); // Emulates one cycle
+    void printScreen(); // Prints to the screen
 };
 
 void chip8::loadProgram(){
@@ -390,6 +400,13 @@ void chip8::loadProgram(){
 void chip8::emulateCycle(){
     opcode = (memory[pc] << 8u) | memory[pc + 1];
 	pc += 2;
+
+    /*
+    as the table array contains addresses of the chip8 member functions we dereference them
+    thus the syntax *(table[....])
+    the last two brackets are for parameters but our function doesnt take any parameter
+    we use *this as the table array is a public variable of the class chip8
+    */
 
 	((*this).*(table[(opcode & 0xF000u) >> 12u]))();
 
