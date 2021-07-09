@@ -3,7 +3,6 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <dos.h>
 #include <ctime>
 
 using std::chrono::duration_cast;
@@ -64,7 +63,7 @@ public:
     // 1 byte x 2K Video Memory (64 x 32)
     uint32_t gfx[screen_width * screen_height];
 
-    // stack and stack pointer 
+    // stack and stack pointer
     uint16_t stack[16];
     uint16_t sp;
 
@@ -89,11 +88,11 @@ public:
 
         for(int i=0;i<80;i++)
             memory[i + fontSetStart] = chip8_fontset[i];
-        
+
         memset(keypad,0,sizeof(keypad));
         memset(gfx,0,sizeof(gfx));
-        
-        // MSB of the instruction 
+
+        // MSB of the instruction
         table[0x0] = &chip8::Table0; // Address of the Table0 function which then points to table0[]
 	    table[0x1] = &chip8::op_1;
 	    table[0x2] = &chip8::op_2;
@@ -161,7 +160,7 @@ public:
     void op_NULL(){}
 
 
-    // Instructions Below 
+    // Instructions Below
     // Reference ==> http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
     void op_00E0(){
         memset(gfx,0,sizeof(gfx));
@@ -170,12 +169,12 @@ public:
     void op_00EE(){
         --sp;
 	    pc = stack[sp];
-    }    
-    
+    }
+
     void op_1(){
         pc = (opcode & 0x0FFF);
     }
-    
+
     void op_2(){
         stack[sp] = pc;
         sp++;
@@ -186,12 +185,12 @@ public:
         if(V[(opcode & 0x0F00)>>8] == (opcode & 0x00FF))
             pc += 2;
     }
-    
+
     void op_4(){
         if(V[(opcode & 0x0F00)>>8] != (opcode & 0x00FF))
             pc += 2;
     }
-    
+
     void op_5(){
         if(V[(opcode & 0x0F00)>>8] == V[(opcode & 0x00F0)>>4])
             pc += 2;
@@ -212,7 +211,7 @@ public:
     void op_8xy1(){
         V[(opcode & 0x0F00)>>8] |= V[(opcode & 0x00F0)>>4];
     }
-    
+
     void op_8xy2(){
         V[(opcode & 0x0F00)>>8] &= V[(opcode & 0x00F0)>>4];
     }
@@ -302,8 +301,8 @@ public:
                     *screenPixel ^= 0xFFFFFFFF;
                 }
             }
-        }    
-    }    
+        }
+    }
 
     void op_Ex9E(){
         if(keypad[V[(opcode & 0x0F00)>>8]])
@@ -355,7 +354,7 @@ public:
     void op_Fx29(){
         I = fontSetStart + (V[(opcode & 0x0F00) >> 8] * 5);
     }
-    
+
     void op_Fx33(){
         uint8_t val = V[(opcode & 0x0F00) >> 8];
         memory[I+2] = val%10;
@@ -453,7 +452,7 @@ int main(int argc, char* argv[]){
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("CHIP 8 Emu", 0, 0, screen_width * 10, screen_height * 10, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height); 
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
 
     bool quit = false;
     auto lastCycle = std::chrono::high_resolution_clock::now();
@@ -482,187 +481,182 @@ int main(int argc, char* argv[]){
 bool ProcessInput(uint8_t* key){
 	//Handle events on queue
     bool quit = false;
-    SDL_Event e;
-				while(SDL_PollEvent(&e) != 0)
-				{
-					//User requests quit
-					if(e.type == SDL_QUIT)
-						quit = true;
-					//User presses a key
-					else if(e.type == SDL_KEYDOWN)
-					{
-						//Select surfaces based on key press
-						switch(e.key.keysym.sym)
-						{
-						case SDLK_x:
-							std::cout << "Key 'x' is pressed." << endl;
-							key[0x0] = 1;
-							break;
+    SDL_Event event;
+	while(SDL_PollEvent(&event) != 0){
+        //User requests quit
+        if(event.type == SDL_QUIT)
+            quit = true;
+        
+        //User presses a key
+        else if(event.type == SDL_KEYDOWN){
+            //Select surfaces based on key press
+            switch(event.key.keysym.sym){
+                case SDLK_x:
+                    std::cout << "Key 'x' is pressed." << endl;
+                    key[0x0] = 1;
+                    break;
 
-						case SDLK_1:
-							std::cout << "Key '1' is pressed." << endl;
-							key[0x1] = 1;
-							break;
+                case SDLK_1:
+                    std::cout << "Key '1' is pressed." << endl;
+                    key[0x1] = 1;
+                    break;
 
-						case SDLK_2:
-							std::cout << "Key '2' is pressed." << endl;
-							key[0x2] = 1;
-							break;
+                case SDLK_2:
+                    std::cout << "Key '2' is pressed." << endl;
+                    key[0x2] = 1;
+                    break;
 
-						case SDLK_3:
-							std::cout << "Key '3' is pressed." << endl;
-							key[0x3] = 1;
-							break;
+                case SDLK_3:
+                    std::cout << "Key '3' is pressed." << endl;
+                    key[0x3] = 1;
+                    break;
 
-						case SDLK_q:
-							std::cout << "Key 'q' is pressed." << endl;
-							key[0x4] = 1;
-							break;
+                case SDLK_q:
+                    std::cout << "Key 'q' is pressed." << endl;
+                    key[0x4] = 1;
+                    break;
 
-						case SDLK_w:
-							std::cout << "Key 'w' is pressed." << endl;
-							key[0x5] = 1;
-							break;
+                case SDLK_w:
+                    std::cout << "Key 'w' is pressed." << endl;
+                    key[0x5] = 1;
+                    break;
 
-						case SDLK_e:
-							std::cout << "Key 'e' is pressed." << endl;
-							key[0x6] = 1;
-							break;
+                case SDLK_e:
+                    std::cout << "Key 'e' is pressed." << endl;
+                    key[0x6] = 1;
+                    break;
 
-						case SDLK_a:
-							std::cout << "Key 'a' is pressed." << endl;
-							key[0x7] = 1;
-							break;
+                case SDLK_a:
+                    std::cout << "Key 'a' is pressed." << endl;
+                    key[0x7] = 1;
+                    break;
 
-						case SDLK_s:
-							std::cout << "Key 's' is pressed." << endl;
-							key[0x8] = 1;
-							break;
+                case SDLK_s:
+                    std::cout << "Key 's' is pressed." << endl;
+                    key[0x8] = 1;
+                    break;
 
-						case SDLK_d:
-							std::cout << "Key 'd' is pressed." << endl;
-							key[0x9] = 1;
-							break;
+                case SDLK_d:
+                    std::cout << "Key 'd' is pressed." << endl;
+                    key[0x9] = 1;
+                    break;
 
-						case SDLK_z:
-							std::cout << "Key 'z' is pressed." << endl;
-							key[0xA] = 1;
-							break;
+                case SDLK_z:
+                    std::cout << "Key 'z' is pressed." << endl;
+                    key[0xA] = 1;
+                    break;
 
-						case SDLK_c:
-							std::cout << "Key 'c' is pressed." << endl;
-							key[0xB] = 1;
-							break;
+                case SDLK_c:
+                    std::cout << "Key 'c' is pressed." << endl;
+                    key[0xB] = 1;
+                    break;
 
-						case SDLK_4:
-							std::cout << "Key '4' is pressed." << endl;
-							key[0xC] = 1;
-							break;
+                case SDLK_4:
+                    std::cout << "Key '4' is pressed." << endl;
+                    key[0xC] = 1;
+                    break;
 
-						case SDLK_r:
-							std::cout << "Key 'r' is pressed." << endl;
-							key[0xD] = 1;
-							break;
+                case SDLK_r:
+                    std::cout << "Key 'r' is pressed." << endl;
+                    key[0xD] = 1;
+                    break;
 
-						case SDLK_f:
-							std::cout << "Key 'f' is pressed." << endl;
-							key[0xE] = 1;
-							break;
+                case SDLK_f:
+                    std::cout << "Key 'f' is pressed." << endl;
+                    key[0xE] = 1;
+                    break;
 
-						case SDLK_v:
-							std::cout << "Key 'v' is pressed." << endl;
-							key[0xF] = 1;
-							break;
-						}
-					}
-					if(e.type == SDL_KEYUP)
-					{
-						//Select surfaces based on key press
-						switch(e.key.keysym.sym)
-						{
-						case SDLK_x:
-							std::cout << "Key 'x' is released." << endl;
-							key[0x0] = 0;
-							break;
+                case SDLK_v:
+                    std::cout << "Key 'v' is pressed." << endl;
+                    key[0xF] = 1;
+                    break;
+                }
+        }
+        if(event.type == SDL_KEYUP){
+            //Select surfaces based on key press
+            switch(event.key.keysym.sym){
+                case SDLK_x:
+                    std::cout << "Key 'x' is released." << endl;
+                    key[0x0] = 0;
+                    break;
 
-						case SDLK_1:
-							std::cout << "Key '1' is released." << endl;
-							key[0x1] = 0;
-							break;
+                case SDLK_1:
+                    std::cout << "Key '1' is released." << endl;
+                    key[0x1] = 0;
+                    break;
 
-						case SDLK_2:
-							std::cout << "Key '2' is released." << endl;
-							key[0x2] = 0;
-							break;
+                case SDLK_2:
+                    std::cout << "Key '2' is released." << endl;
+                    key[0x2] = 0;
+                    break;
 
-						case SDLK_3:
-							std::cout << "Key '3' is released." << endl;
-							key[0x3] = 0;
-							break;
+                case SDLK_3:
+                    std::cout << "Key '3' is released." << endl;
+                    key[0x3] = 0;
+                    break;
 
-						case SDLK_q:
-							std::cout << "Key 'q' is released." << endl;
-							key[0x4] = 0;
-							break;
+                case SDLK_q:
+                    std::cout << "Key 'q' is released." << endl;
+                    key[0x4] = 0;
+                    break;
 
-						case SDLK_w:
-							std::cout << "Key 'w' is released." << endl;
-							key[0x5] = 0;
-							break;
+                case SDLK_w:
+                    std::cout << "Key 'w' is released." << endl;
+                    key[0x5] = 0;
+                    break;
 
-						case SDLK_e:
-							std::cout << "Key 'e' is released." << endl;
-							key[0x6] = 0;
-							break;
+                case SDLK_e:
+                    std::cout << "Key 'e' is released." << endl;
+                    key[0x6] = 0;
+                    break;
 
-						case SDLK_a:
-							std::cout << "Key 'a' is released." << endl;
-							key[0x7] = 0;
-							break;
+                case SDLK_a:
+                    std::cout << "Key 'a' is released." << endl;
+                    key[0x7] = 0;
+                    break;
 
-						case SDLK_s:
-							std::cout << "Key 's' is released." << endl;
-							key[0x8] = 0;
-							break;
+                case SDLK_s:
+                    std::cout << "Key 's' is released." << endl;
+                    key[0x8] = 0;
+                    break;
 
-						case SDLK_d:
-							std::cout << "Key 'd' is released." << endl;
-							key[0x9] = 0;
-							break;
+                case SDLK_d:
+                    std::cout << "Key 'd' is released." << endl;
+                    key[0x9] = 0;
+                    break;
 
-						case SDLK_z:
-							std::cout << "Key 'z' is released." << endl;
-							key[0xA] = 0;
-							break;
+                case SDLK_z:
+                    std::cout << "Key 'z' is released." << endl;
+                    key[0xA] = 0;
+                    break;
 
-						case SDLK_c:
-							std::cout << "Key 'c' is released." << endl;
-							key[0xB] = 0;
-							break;
+                case SDLK_c:
+                    std::cout << "Key 'c' is released." << endl;
+                    key[0xB] = 0;
+                    break;
 
-						case SDLK_4:
-							std::cout << "Key '4' is released." << endl;
-							key[0xC] = 0;
-							break;
+                case SDLK_4:
+                    std::cout << "Key '4' is released." << endl;
+                    key[0xC] = 0;
+                    break;
 
-						case SDLK_r:
-							std::cout << "Key 'r' is released." << endl;
-							key[0xD] = 0;
-							break;
+                case SDLK_r:
+                    std::cout << "Key 'r' is released." << endl;
+                    key[0xD] = 0;
+                    break;
+                case SDLK_f:
+                    std::cout << "Key 'f' is released." << endl;
+                    key[0xE] = 0;
+                    break;
 
-						case SDLK_f:
-							std::cout << "Key 'f' is released." << endl;
-							key[0xE] = 0;
-							break;
-
-						case SDLK_v:
-							std::cout << "Key 'v' is released." << endl;
-							key[0xF] = 0;
-							break;
-						}
-					}
-				}
-                return quit;
+                case SDLK_v:
+                    std::cout << "Key 'v' is released." << endl;
+                    key[0xF] = 0;
+                    break;
+                }
+            }
+	}
+    return quit;
 }
 
 void Update(void const* buffer, int pitch, SDL_Renderer* renderer,SDL_Texture* texture){
