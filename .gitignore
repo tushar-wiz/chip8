@@ -357,3 +357,5 @@ test_opcode.ch8
 chip8
 testingC++Classes/
 main.exe
+SDL2/
+SDL2.dll
