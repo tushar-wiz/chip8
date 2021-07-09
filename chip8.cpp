@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <cstring>
 
-using std::endl;
-
 #define startLocation 0x200
 #define fontSetStart 0x50
 #define screen_width 64
@@ -397,7 +395,6 @@ void chip8::loadProgram(){
     // takes buffer and stores it in the memory of the chip
     for(int i=0;i<n;i++){
         memory[i+startLocation] = *(buf + i);
-        //printf("%02x\n",memory[i+512]);
     }
 
     delete[] buf;
@@ -425,19 +422,6 @@ void chip8::emulateCycle(){
 		--soundTimer;
 }
 
-void chip8::printScreen(){
-    for(int j=0;j<32;j++){
-        for(int i=0;i<64;i++){
-            if(gfx[(screen_width*j)+i])
-               printf("█");
-            else
-                printf(" ");
-            //printf("%d",gfx[(64*j)+i]);
-        }
-        printf("\n");
-    }
-}
-
 int main(int argc, char* argv[]){
     chip8 c;
     c.loadProgram();
@@ -459,7 +443,7 @@ int main(int argc, char* argv[]){
 		if (dt > cycleDelay)
 		{
 			lastCycleTime = currentTime;
-            //std::cout << "yes";
+
 			c.emulateCycle();
 
 			Update(c.gfx, videoPitch,renderer,texture);
