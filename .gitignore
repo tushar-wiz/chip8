@@ -359,3 +359,7 @@ testingC++Classes/
 main.exe
 SDL2/
 SDL2.dll
+flightrunner.ch8
+.gitignore
+.vscode/settings.json
+tetris.rom

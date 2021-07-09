@@ -1,10 +1,10 @@
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <ctime>
 
-using namespace std;
+using std::endl;
 
 #define startLocation 0x200
 #define fontSetStart 0x50
@@ -32,7 +32,7 @@ uint8_t chip8_fontset[80] = {
 
 
 void Update(void const* buffer, int pitch, SDL_Renderer* renderer,SDL_Texture* texture);
-bool ProcessInput(uint8_t* keys);
+void ProcessInput(uint8_t* keys);
 
 class chip8{
 public:
@@ -58,7 +58,7 @@ public:
     // 1 byte x 2K Video Memory (64 x 32)
     uint32_t gfx[screen_width * screen_height];
 
-    // stack and stack pointer 
+    // stack and stack pointer
     uint16_t stack[16];
     uint16_t sp;
 
@@ -80,13 +80,14 @@ public:
 
     chip8(){
         pc = startLocation;
-
+        srand(memory[13]);
         for(int i=0;i<80;i++)
             memory[i + fontSetStart] = chip8_fontset[i];
-        
+
+        memset(keypad,0,sizeof(keypad));
         memset(gfx,0,sizeof(gfx));
-        
-        // MSB of the instruction 
+
+        // MSB of the instruction
         table[0x0] = &chip8::Table0; // Address of the Table0 function which then points to table0[]
 	    table[0x1] = &chip8::op_1;
 	    table[0x2] = &chip8::op_2;
@@ -154,7 +155,7 @@ public:
     void op_NULL(){}
 
 
-    // Instructions Below 
+    // Instructions Below
     // Reference ==> http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
     void op_00E0(){
         memset(gfx,0,sizeof(gfx));
@@ -163,12 +164,12 @@ public:
     void op_00EE(){
         --sp;
 	    pc = stack[sp];
-    }    
-    
+    }
+
     void op_1(){
         pc = (opcode & 0x0FFF);
     }
-    
+
     void op_2(){
         stack[sp] = pc;
         sp++;
@@ -179,12 +180,12 @@ public:
         if(V[(opcode & 0x0F00)>>8] == (opcode & 0x00FF))
             pc += 2;
     }
-    
+
     void op_4(){
         if(V[(opcode & 0x0F00)>>8] != (opcode & 0x00FF))
             pc += 2;
     }
-    
+
     void op_5(){
         if(V[(opcode & 0x0F00)>>8] == V[(opcode & 0x00F0)>>4])
             pc += 2;
@@ -205,7 +206,7 @@ public:
     void op_8xy1(){
         V[(opcode & 0x0F00)>>8] |= V[(opcode & 0x00F0)>>4];
     }
-    
+
     void op_8xy2(){
         V[(opcode & 0x0F00)>>8] &= V[(opcode & 0x00F0)>>4];
     }
@@ -265,7 +266,7 @@ public:
     }
 
     void op_C(){
-        V[(opcode & 0x0F00)>>8] = (rand()%256) & (opcode & 0x00FF);
+        V[(opcode & 0x0F00)>>8] = (rand()%(0xFF)) & (opcode & 0x00FF);
     }
 
     // Taken this func from online reference
@@ -295,8 +296,8 @@ public:
                     *screenPixel ^= 0xFFFFFFFF;
                 }
             }
-        }    
-    }    
+        }
+    }
 
     void op_Ex9E(){
         if(keypad[V[(opcode & 0x0F00)>>8]])
@@ -348,7 +349,7 @@ public:
     void op_Fx29(){
         I = fontSetStart + (V[(opcode & 0x0F00) >> 8] * 5);
     }
-    
+
     void op_Fx33(){
         uint8_t val = V[(opcode & 0x0F00) >> 8];
         memory[I+2] = val%10;
@@ -376,7 +377,7 @@ public:
 
 void chip8::loadProgram(){
     uint8_t* buf;
-    char fileName[] = "test_opcode.ch8";
+    char fileName[] = "tetris.rom";
     FILE *ptr;
     //opens the file for reading
     ptr = fopen(fileName,"rb");
@@ -438,206 +439,175 @@ void chip8::printScreen(){
 }
 
 int main(int argc, char* argv[]){
-    int n;
     chip8 c;
     c.loadProgram();
-    uint16_t i=0;
-    time_t lastRead = 0;
-    time_t curTime;
+
+    int cycleDelay = 3;
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("CHIP 8 Emu", 0, 0, screen_width * 10, screen_height * 10, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height); 
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
 
-    bool quit = false;
+    auto lastCycleTime = std::chrono::high_resolution_clock::now();
+    int videoPitch = sizeof(c.gfx[0])*screen_width;
+	while(true){
+		ProcessInput(c.keypad);
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float dt = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - lastCycleTime).count();
 
-    while(!quit){
+		if (dt > cycleDelay)
+		{
+			lastCycleTime = currentTime;
+            //std::cout << "yes";
+			c.emulateCycle();
 
-        //quit = ProcessInput(c.keypad);
-
-        curTime = time(NULL);
-        if(curTime > 1 + lastRead){
-            lastRead = curTime;
-            c.emulateCycle();
-            Update(c.gfx, sizeof(c.gfx[0])*screen_width, renderer, texture);
-        }
-    }
+			Update(c.gfx, videoPitch,renderer,texture);
+		}
+	}
     return 0;
 }
 
-bool ProcessInput(uint8_t* keys){
-	bool quit = false;
+void ProcessInput(uint8_t* key){
+    SDL_Event event;
+	while(SDL_PollEvent(&event)){
+        if(event.type == SDL_KEYDOWN){
 
-	SDL_Event event;
+            switch(event.key.keysym.sym){
+                case SDLK_x:
+                    key[0x0] = 1;
+                    break;
 
-		while (SDL_PollEvent(&event)){}
-			switch (event.type){
-				case SDL_QUIT:
-					quit = true;
-				    break;
-				case SDL_KEYDOWN:{
+                case SDLK_1:
+                    key[0x1] = 1;
+                    break;
 
-					switch (event.key.keysym.sym){
-						case SDLK_ESCAPE:
-							quit = true;
-						    break;
+                case SDLK_2:
+                    key[0x2] = 1;
+                    break;
 
-						case SDLK_x:
-							keys[0] = 1;
-						    break;
+                case SDLK_3:
+                    key[0x3] = 1;
+                    break;
 
-						case SDLK_1:
-							keys[1] = 1;
-						    break;
+                case SDLK_q:
+                    key[0x4] = 1;
+                    break;
 
-						case SDLK_2:
-							keys[2] = 1;
-						    break;
+                case SDLK_w:
+                    key[0x5] = 1;
+                    break;
 
-						case SDLK_3:
-							keys[3] = 1;
-						    break;
+                case SDLK_e:
+                    key[0x6] = 1;
+                    break;
 
-						case SDLK_q:
-							keys[4] = 1;
-						    break;
+                case SDLK_a:
+                    key[0x7] = 1;
+                    break;
 
-						case SDLK_w:
-							keys[5] = 1;
-						    break;
+                case SDLK_s:
+                    key[0x8] = 1;
+                    break;
 
-						case SDLK_e:
-							keys[6] = 1;
-						    break;
+                case SDLK_d:
+                    key[0x9] = 1;
+                    break;
 
-						case SDLK_a:
-							keys[7] = 1;
-						    break;
+                case SDLK_z:
+                    key[0xA] = 1;
+                    break;
 
-						case SDLK_s:
-							keys[8] = 1;
-						    break;
+                case SDLK_c:
+                    key[0xB] = 1;
+                    break;
 
-						case SDLK_d:
-							keys[9] = 1;
-						    break;
+                case SDLK_4:
+                    key[0xC] = 1;
+                    break;
 
-						case SDLK_z:
-							keys[0xA] = 1;
-						    break;
+                case SDLK_r:
+                    key[0xD] = 1;
+                    break;
 
-						case SDLK_c:
-							keys[0xB] = 1;
-						    break;
+                case SDLK_f:
+                    key[0xE] = 1;
+                    break;
 
-						case SDLK_4:
-						{
-							keys[0xC] = 1;
-						} break;
+                case SDLK_v:
+                    key[0xF] = 1;
+                    break;
+                }
+        }
+        if(event.type == SDL_KEYUP){
+            switch(event.key.keysym.sym){
+                case SDLK_x:
+                    key[0x0] = 0;
+                    break;
 
-						case SDLK_r:
-							keys[0xD] = 1;
-						    break;
+                case SDLK_1:
+                    key[0x1] = 0;
+                    break;
 
-						case SDLK_f:
-							keys[0xE] = 1;
-						    break;
+                case SDLK_2:
+                    key[0x2] = 0;
+                    break;
 
-						case SDLK_v:
-							keys[0xF] = 1;
-						    break;
-					}
-				} break;
+                case SDLK_3:
+                    key[0x3] = 0;
+                    break;
 
-				case SDL_KEYUP:
-				{
-					switch (event.key.keysym.sym)
-					{
-						case SDLK_x:
-						{
-							keys[0] = 0;
-						} break;
+                case SDLK_q:
+                    key[0x4] = 0;
+                    break;
 
-						case SDLK_1:
-						{
-							keys[1] = 0;
-						} break;
+                case SDLK_w:
+                    key[0x5] = 0;
+                    break;
 
-						case SDLK_2:
-						{
-							keys[2] = 0;
-						} break;
+                case SDLK_e:
+                    key[0x6] = 0;
+                    break;
 
-						case SDLK_3:
-						{
-							keys[3] = 0;
-						} break;
+                case SDLK_a:
+                    key[0x7] = 0;
+                    break;
 
-						case SDLK_q:
-						{
-							keys[4] = 0;
-						} break;
+                case SDLK_s:
+                    key[0x8] = 0;
+                    break;
 
-						case SDLK_w:
-						{
-							keys[5] = 0;
-						} break;
+                case SDLK_d:
+                    key[0x9] = 0;
+                    break;
 
-						case SDLK_e:
-						{
-							keys[6] = 0;
-						} break;
+                case SDLK_z:
+                    key[0xA] = 0;
+                    break;
 
-						case SDLK_a:
-						{
-							keys[7] = 0;
-						} break;
+                case SDLK_c:
+                    key[0xB] = 0;
+                    break;
 
-						case SDLK_s:
-						{
-							keys[8] = 0;
-						} break;
+                case SDLK_4:
+                    key[0xC] = 0;
+                    break;
 
-						case SDLK_d:
-						{
-							keys[9] = 0;
-						} break;
+                case SDLK_r:
+                    key[0xD] = 0;
+                    break;
 
-						case SDLK_z:
-						{
-							keys[0xA] = 0;
-						} break;
+                case SDLK_f:
+                    key[0xE] = 0;
+                    break;
 
-						case SDLK_c:
-						{
-							keys[0xB] = 0;
-						} break;
-
-						case SDLK_4:
-						{
-							keys[0xC] = 0;
-						} break;
-
-						case SDLK_r:
-						{
-							keys[0xD] = 0;
-						} break;
-
-						case SDLK_f:
-						{
-							keys[0xE] = 0;
-						} break;
-
-						case SDLK_v:
-						{
-							keys[0xF] = 0;
-						} break;
-					}
-				} break;
-			}
-            return quit;
-		}
+                case SDLK_v:
+                    key[0xF] = 0;
+                    break;
+                }
+            }
+	}
+}
 
 void Update(void const* buffer, int pitch, SDL_Renderer* renderer,SDL_Texture* texture){
 	SDL_UpdateTexture(texture, nullptr, buffer, pitch);
