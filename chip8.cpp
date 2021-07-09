@@ -3,12 +3,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <ctime>
 
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
-using std::chrono::seconds;
-using std::chrono::system_clock;
 using std::endl;
 
 #define startLocation 0x200
@@ -37,7 +32,7 @@ uint8_t chip8_fontset[80] = {
 
 
 void Update(void const* buffer, int pitch, SDL_Renderer* renderer,SDL_Texture* texture);
-bool ProcessInput(uint8_t* keys);
+void ProcessInput(uint8_t* keys);
 
 class chip8{
 public:
@@ -85,7 +80,7 @@ public:
 
     chip8(){
         pc = startLocation;
-
+        srand(memory[13]);
         for(int i=0;i<80;i++)
             memory[i + fontSetStart] = chip8_fontset[i];
 
@@ -271,7 +266,7 @@ public:
     }
 
     void op_C(){
-        V[(opcode & 0x0F00)>>8] = (rand()%256) & (opcode & 0x00FF);
+        V[(opcode & 0x0F00)>>8] = (rand()%(0xFF)) & (opcode & 0x00FF);
     }
 
     // Taken this func from online reference
@@ -382,7 +377,7 @@ public:
 
 void chip8::loadProgram(){
     uint8_t* buf;
-    char fileName[] = "pong.ch8";
+    char fileName[] = "tetris.rom";
     FILE *ptr;
     //opens the file for reading
     ptr = fopen(fileName,"rb");
@@ -447,216 +442,171 @@ int main(int argc, char* argv[]){
     chip8 c;
     c.loadProgram();
 
-    int cycleDelay = 1;
+    int cycleDelay = 3;
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* window = SDL_CreateWindow("CHIP 8 Emu", 0, 0, screen_width * 10, screen_height * 10, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, screen_width, screen_height);
 
-    bool quit = false;
-    auto lastCycle = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float delayTime;
-    while(!quit){
+    auto lastCycleTime = std::chrono::high_resolution_clock::now();
+    int videoPitch = sizeof(c.gfx[0])*screen_width;
+	while(true){
+		ProcessInput(c.keypad);
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float dt = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - lastCycleTime).count();
 
-        quit = ProcessInput(c.keypad);
+		if (dt > cycleDelay)
+		{
+			lastCycleTime = currentTime;
+            //std::cout << "yes";
+			c.emulateCycle();
 
-
-        c.emulateCycle();
-        Update(c.gfx, sizeof(c.gfx[0])*screen_width, renderer, texture);
-
-
-        //while(delayTime < cycleDelay){
-        //    currentTime = std::chrono::high_resolution_clock::now();
-
-        //    delayTime = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime-lastCycle).count();
-
-        //}
-        //lastCycle = currentTime;
-    }
+			Update(c.gfx, videoPitch,renderer,texture);
+		}
+	}
     return 0;
 }
 
-bool ProcessInput(uint8_t* key){
-	//Handle events on queue
-    bool quit = false;
+void ProcessInput(uint8_t* key){
     SDL_Event event;
-	while(SDL_PollEvent(&event) != 0){
-        //User requests quit
-        if(event.type == SDL_QUIT)
-            quit = true;
-        
-        //User presses a key
-        else if(event.type == SDL_KEYDOWN){
-            //Select surfaces based on key press
+	while(SDL_PollEvent(&event)){
+        if(event.type == SDL_KEYDOWN){
+
             switch(event.key.keysym.sym){
                 case SDLK_x:
-                    std::cout << "Key 'x' is pressed." << endl;
                     key[0x0] = 1;
                     break;
 
                 case SDLK_1:
-                    std::cout << "Key '1' is pressed." << endl;
                     key[0x1] = 1;
                     break;
 
                 case SDLK_2:
-                    std::cout << "Key '2' is pressed." << endl;
                     key[0x2] = 1;
                     break;
 
                 case SDLK_3:
-                    std::cout << "Key '3' is pressed." << endl;
                     key[0x3] = 1;
                     break;
 
                 case SDLK_q:
-                    std::cout << "Key 'q' is pressed." << endl;
                     key[0x4] = 1;
                     break;
 
                 case SDLK_w:
-                    std::cout << "Key 'w' is pressed." << endl;
                     key[0x5] = 1;
                     break;
 
                 case SDLK_e:
-                    std::cout << "Key 'e' is pressed." << endl;
                     key[0x6] = 1;
                     break;
 
                 case SDLK_a:
-                    std::cout << "Key 'a' is pressed." << endl;
                     key[0x7] = 1;
                     break;
 
                 case SDLK_s:
-                    std::cout << "Key 's' is pressed." << endl;
                     key[0x8] = 1;
                     break;
 
                 case SDLK_d:
-                    std::cout << "Key 'd' is pressed." << endl;
                     key[0x9] = 1;
                     break;
 
                 case SDLK_z:
-                    std::cout << "Key 'z' is pressed." << endl;
                     key[0xA] = 1;
                     break;
 
                 case SDLK_c:
-                    std::cout << "Key 'c' is pressed." << endl;
                     key[0xB] = 1;
                     break;
 
                 case SDLK_4:
-                    std::cout << "Key '4' is pressed." << endl;
                     key[0xC] = 1;
                     break;
 
                 case SDLK_r:
-                    std::cout << "Key 'r' is pressed." << endl;
                     key[0xD] = 1;
                     break;
 
                 case SDLK_f:
-                    std::cout << "Key 'f' is pressed." << endl;
                     key[0xE] = 1;
                     break;
 
                 case SDLK_v:
-                    std::cout << "Key 'v' is pressed." << endl;
                     key[0xF] = 1;
                     break;
                 }
         }
         if(event.type == SDL_KEYUP){
-            //Select surfaces based on key press
             switch(event.key.keysym.sym){
                 case SDLK_x:
-                    std::cout << "Key 'x' is released." << endl;
                     key[0x0] = 0;
                     break;
 
                 case SDLK_1:
-                    std::cout << "Key '1' is released." << endl;
                     key[0x1] = 0;
                     break;
 
                 case SDLK_2:
-                    std::cout << "Key '2' is released." << endl;
                     key[0x2] = 0;
                     break;
 
                 case SDLK_3:
-                    std::cout << "Key '3' is released." << endl;
                     key[0x3] = 0;
                     break;
 
                 case SDLK_q:
-                    std::cout << "Key 'q' is released." << endl;
                     key[0x4] = 0;
                     break;
 
                 case SDLK_w:
-                    std::cout << "Key 'w' is released." << endl;
                     key[0x5] = 0;
                     break;
 
                 case SDLK_e:
-                    std::cout << "Key 'e' is released." << endl;
                     key[0x6] = 0;
                     break;
 
                 case SDLK_a:
-                    std::cout << "Key 'a' is released." << endl;
                     key[0x7] = 0;
                     break;
 
                 case SDLK_s:
-                    std::cout << "Key 's' is released." << endl;
                     key[0x8] = 0;
                     break;
 
                 case SDLK_d:
-                    std::cout << "Key 'd' is released." << endl;
                     key[0x9] = 0;
                     break;
 
                 case SDLK_z:
-                    std::cout << "Key 'z' is released." << endl;
                     key[0xA] = 0;
                     break;
 
                 case SDLK_c:
-                    std::cout << "Key 'c' is released." << endl;
                     key[0xB] = 0;
                     break;
 
                 case SDLK_4:
-                    std::cout << "Key '4' is released." << endl;
                     key[0xC] = 0;
                     break;
 
                 case SDLK_r:
-                    std::cout << "Key 'r' is released." << endl;
                     key[0xD] = 0;
                     break;
+
                 case SDLK_f:
-                    std::cout << "Key 'f' is released." << endl;
                     key[0xE] = 0;
                     break;
 
                 case SDLK_v:
-                    std::cout << "Key 'v' is released." << endl;
                     key[0xF] = 0;
                     break;
                 }
             }
 	}
-    return quit;
 }
 
 void Update(void const* buffer, int pitch, SDL_Renderer* renderer,SDL_Texture* texture){
