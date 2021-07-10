@@ -34,7 +34,7 @@ I Tested some of the available ROMS from the internet
 ![Flight Runner](/images/flight_runner.png)
 
 ### Issues
-Sometimes the compiled binary fails to start, just re running it works (Potential issue with SDL code)
+Sometimes the executabl file fails to start, just re running it works (Potential issue with SDL code)
 
 ### Old Folder
 I started with coding in C but realised using Classes for this task would be better and shifted to C++
