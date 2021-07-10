@@ -7,8 +7,8 @@ Chip 8 is a not an actual chip or a piece of hardware thus calling it an emulato
 * 64x32 monochrome display
 
 
-## Building
-To build this you must have the **SDL2** library installed and the **SDL2.dll** in the *root* folder  
+## Compiling
+To compile this you must have the **SDL2** library installed and the **SDL2.dll** in the *root* folder  
 Compiler Flags
 ```
 g++ -o main.exe chip8.cpp -lmingw32 -lSDL2main -lSDL2 -std=c++14
