@@ -1,5 +1,5 @@
 # Chip8 Interpreter
-Chip 8 is a not an actual chip or a piece of hardware thus calling it an emulator is wrong. It is coded as an emulator, and generally beginners like me make this so we can move on to make more advanced such as the gameboy and NES.  
+Chip 8 is a not an actual chip or a piece of hardware thus calling it an emulator is wrong. It is coded as an emulator, and generally beginners like me make this so we can move on to make more advanced such as the Gameboy and NES.  
 * Chip8 has 36 different instructions
 * 4KB memory
 * 16 general purpose 8bit registers
@@ -13,14 +13,14 @@ Compiler Flags
 ```
 g++ -o main.exe chip8.cpp -lmingw32 -lSDL2main -lSDL2 -std=c++14
 ```
-To play you must have a chip8 ROM for a game and have it placed in the *root* folder  
-And add the filename of the ROM on line 378  
+To play you must have the chip8 ROM for a particular game and have it placed in the *root* folder  
+Then add the filename of the ROM on line 378  
 ```
 378| char fileName[] = "tetris.rom";
 ```
 
 ## Screenshots
-I Tested some available ROMS from the internet  
+I Tested some of the available ROMS from the internet  
 [Pong](https://github.com/kripod/chip8-roms/blob/master/games/Pong%20(1%20player).ch8)
 ![Pong](/images/pong.png)  
 
@@ -35,3 +35,6 @@ I Tested some available ROMS from the internet
 
 ### Issues
 Sometimes the compiled binary fails to start, just re running it works (Potential issue with SDL code)
+
+### Old Folder
+I started with coding in C but realised using Classes for this task would be better and shifted to C++
