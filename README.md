@@ -1,5 +1,5 @@
 # Chip8 Interpreter
-Chip 8 is a not an actual chip or a piece of hardware thus calling it an emulator is wrong. It is coded as an emulator, and generally beginners like me make this so we can move on to make more advanced such as the Gameboy and NES.  
+Chip 8 is a not an actual chip or a piece of hardware thus calling it an emulator is wrong. It is coded as an emulator, and generally beginners like me make this so we can move on to make more advanced emulators for systems such as the Gameboy and NES.  
 * Chip8 has 36 different instructions
 * 4KB memory
 * 16 general purpose 8bit registers
